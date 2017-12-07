@@ -1,68 +1,56 @@
-import requests
+import sys
 import time
 import json
-import sys
+import requests
 from bs4 import BeautifulSoup
-
 
 ptt_url = 'https://www.ptt.cc'
 
-
-
-def checkStatus(url):
-    
-    response = requests.get(url = url, cookies = {'over18':'1'})
+def check_status(url):
+    """Check Url status"""
+    response = requests.get(url=url, cookies={'over18':'1'})
 
     if response.status_code != 200:
         return None
-    else:
-        return response.text
+    return response.text
 
-    pass
-
-def get_articles(response_text,date):
-    
-    soup = BeautifulSoup(response_text,'html.parser')
-    pre_div = soup.find('div','btn-group btn-group-paging')
+def get_articles(response_text, date):
+    """Get all articles information in the page, return JSON format"""
+    soup = BeautifulSoup(response_text, 'html.parser')
+    pre_div = soup.find('div', 'btn-group btn-group-paging')
     #Get previous page
     pre_url = pre_div.find_all('a')[1].get('href')
-
     articles = []
-    divs = soup.find_all('div','r-ent')
-    for d in divs:
+    div_set = soup.find_all('div', 'r-ent')
 
-        if d.find('div','date').text.strip() == date:
-            
-            pushCount = 0
-            pushStr = d.find('div','nrec').text
-            
-            if pushStr:
+    for div in div_set:
+        author = div.find('div', 'author').text
 
+        if div.find('div', 'date').text.strip() == date:
+            push_count = 0
+            push_str = div.find('div', 'nrec').text
+
+            if push_str:
                 try:
-                    pushCount = int(pushStr)
-                
-                except ValueError:
-                    if pushStr == "爆":
-                        pushCount = 99
+                    push_count = int(push_str)
                     
-                    elif pushStr.startswith("X"):
-                        pushCount = -10
+                except ValueError:
+                    if push_str == "爆":
+                        push_count = 99
+                    elif push_str.startswith("X"):
+                        push_count = -10
 
-            if d.find('a'):
-
-                #href = d.find('a').href
-                href = d.find('a').get('href')
-                articleTitle = d.find('a').text
-                author = ''
+            if div.find('a'):
+                href = div.find('a').get('href')
+                article_title = div.find('a').text
                 articles.append({
-                    'title':articleTitle,
-                    'href':href,
-                    'author':author,
-                    'pushCount':pushCount
+                    "title":article_title,
+                    "href":href,
+                    "author":author,
+                    "pushCount":push_count
                 })
 
-    return articles,pre_url
-
+    return articles, pre_url
 
 # def Crawling(url_reponse):
 
@@ -72,10 +60,9 @@ def get_articles(response_text,date):
 
 #     pass
 
-
 def main(argv):
-    print (get_articles(checkStatus(argv[1]),argv[2]))
-    pass
+    """Main Function"""
+    print(get_articles(check_status(argv[1]), argv[2]))
 
 if __name__ == '__main__':
     main(sys.argv)
