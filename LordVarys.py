@@ -1,4 +1,4 @@
-import Crawler
+import ArticleCrawler
 import MongoConnect
 import ImageCrawler
 import pprint
