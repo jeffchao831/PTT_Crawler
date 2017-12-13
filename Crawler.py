@@ -2,6 +2,8 @@ import sys
 import time
 import json
 import requests
+import pprint
+import Logger
 from bs4 import BeautifulSoup
 
 ptt_url = 'https://www.ptt.cc'
@@ -14,7 +16,7 @@ def check_status(url):
         return None
     return response.text
 
-def get_articles(response_text, date):
+def get_articles(response_text):
     """Get all articles information in the page, return JSON format"""
     soup = BeautifulSoup(response_text, 'html.parser')
     pre_div = soup.find('div', 'btn-group btn-group-paging')
@@ -25,44 +27,42 @@ def get_articles(response_text, date):
 
     for div in div_set:
         author = div.find('div', 'author').text
+        push_count = 0
+        push_str = div.find('div', 'nrec').text
 
-        if div.find('div', 'date').text.strip() == date:
-            push_count = 0
-            push_str = div.find('div', 'nrec').text
+        if push_str:
+            try:
+                push_count = int(push_str)
+                
+            except ValueError:
+                if push_str == "爆":
+                    push_count = 99
+                elif push_str.startswith("X"):
+                    push_count = -10
 
-            if push_str:
-                try:
-                    push_count = int(push_str)
-                    
-                except ValueError:
-                    if push_str == "爆":
-                        push_count = 99
-                    elif push_str.startswith("X"):
-                        push_count = -10
-
-            if div.find('a'):
-                href = div.find('a').get('href')
-                article_title = div.find('a').text
-                articles.append({
-                    "title":article_title,
-                    "href":href,
-                    "author":author,
-                    "pushCount":push_count
-                })
+        if div.find('a'):
+            href = div.find('a').get('href')
+            article_title = div.find('a').text
+            articles.append({
+                "title":article_title,
+                "href":href,
+                "author":author,
+                "pushCount":push_count
+            })
 
     return articles, pre_url
 
-# def Crawling(url_reponse):
+def start(target_url, target_number):
+    """Start crawling"""
+    connect_page = check_status(target_url)
+    count = 0
+    articles_main = []
 
-#     if url_reponse:
-#         articles = []
-#         today = time.strftime("%m/%d").lstrip('0')
-
-#     pass
-
-def main(argv):
-    """Main Function"""
-    print(get_articles(check_status(argv[1]), argv[2]))
-
-if __name__ == '__main__':
-    main(sys.argv)
+    while count < target_number:
+        if connect_page:
+            articles_temp, pre_url = get_articles(connect_page)
+            articles_main += articles_temp
+            count += len(articles_temp)
+            connect_page = check_status(ptt_url+pre_url)
+            Logger.log_info(__name__, 'Next page...')
+    return articles_main, len(articles_main)

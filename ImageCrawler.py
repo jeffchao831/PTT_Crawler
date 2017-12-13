@@ -11,12 +11,12 @@ def image_crawler(url):
     soup = BeautifulSoup(response.text, "html.parser")
     title = soup.find('title').text
 
-    #Delete image url in push content
-    for item in soup.find_all('div', {'class':'push'}):
-        if item.a:
-            item.a.decompose()
-
     if title.find('[正妹]') != -1:
+            #Delete image url in push content
+        for item in soup.find_all('div', {'class':'push'}):
+            if item.a:
+                item.a.decompose()
+
         for item in soup.find_all('a'):
             if item.text.find('imgur.com') != -1:
                 url = item.text
